@@ -1,4 +1,4 @@
-# pdf-png-converter
+# PDF-PNG Converter
 
 Convert AutoCAD-exported PDF floor plans to high-resolution PNG images.
 
