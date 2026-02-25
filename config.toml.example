@@ -1,0 +1,37 @@
+# PDF to PNG Converter — config.toml.example
+# Copy to config.toml and edit to suit your needs.
+# All values shown are the built-in defaults.
+
+[conversion]
+# Target rendering resolution in dots per inch (DPI).
+# Higher values produce sharper output and larger file sizes.
+# Default: 200 — produces ≥3000×2000 px for all standard AutoCAD sheet sizes.
+# The converter will automatically raise DPI if output would fall below min dimensions.
+dpi = 200
+
+# Minimum acceptable pixel count on the long dimension of the output PNG.
+min_width_px = 3000
+
+# Minimum acceptable pixel count on the short dimension of the output PNG.
+min_height_px = 2000
+
+[paths]
+# Directory to scan for PDF files. Subdirectories are scanned recursively.
+# Accepts relative paths (from working directory) or absolute paths.
+import_dir = "import"
+
+# Directory to write PNG files. Created automatically if it does not exist.
+# The directory tree under import_dir is mirrored exactly under export_dir.
+export_dir = "export"
+
+# ─────────────────────────────────────────────────
+# Example: High-resolution archival run
+# ─────────────────────────────────────────────────
+# [conversion]
+# dpi = 300
+# min_width_px = 6000
+# min_height_px = 4000
+#
+# [paths]
+# import_dir = "/mnt/nas/autocad-exports/2026-Q1"
+# export_dir = "/mnt/nas/pngs/2026-Q1"

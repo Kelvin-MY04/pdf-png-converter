@@ -1,0 +1,29 @@
+[project]
+name = "pdf-png-converter"
+version = "0.1.0"
+description = "Convert AutoCAD-exported PDF floor plans to high-resolution PNG images"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pymupdf>=1.25.0",
+]
+
+[project.scripts]
+pdf-png-converter = "pdf_png_converter.cli.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=pdf_png_converter --cov-report=term-missing"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pdf_png_converter"]
