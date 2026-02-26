@@ -93,6 +93,47 @@ def create_multi_page_pdf(output_path: Path) -> None:
     doc.close()
 
 
+def create_lines_pdf(output_path: Path) -> None:
+    """Create a PDF with known black vector lines for contrast testing.
+
+    Page: A4 (595×842 pt), white background.
+    - Thin line:     0.5 pt wide, black, horizontal at y=300 pt
+    - Standard line: 1.0 pt wide, black, horizontal at y=350 pt
+
+    Constants exported for test use:
+      THIN_LINE_Y_PT = 300
+      STANDARD_LINE_Y_PT = 350
+      LINE_X_START_PT = 50
+      LINE_X_END_PT = 545
+    """
+    doc = pymupdf.open()
+    page = doc.new_page(width=595, height=842)  # A4 in points
+
+    # Thin dimension line (0.5 pt) — representative of AutoCAD dimension strokes
+    page.draw_line(
+        pymupdf.Point(50, 300), pymupdf.Point(545, 300),
+        color=(0, 0, 0),
+        width=0.5,
+    )
+
+    # Standard wall line (1.0 pt) — representative of AutoCAD wall strokes
+    page.draw_line(
+        pymupdf.Point(50, 350), pymupdf.Point(545, 350),
+        color=(0, 0, 0),
+        width=1.0,
+    )
+
+    doc.save(str(output_path))
+    doc.close()
+
+
+# Known coordinates for test assertions
+THIN_LINE_Y_PT: int = 300
+STANDARD_LINE_Y_PT: int = 350
+LINE_X_START_PT: int = 50
+LINE_X_END_PT: int = 545
+
+
 def create_corrupted_pdf(output_path: Path) -> None:
     """Create a file with random non-PDF bytes that PyMuPDF cannot open."""
     corrupted_bytes = (
@@ -119,6 +160,10 @@ def main() -> None:
     corrupted = FIXTURES_DIR / "corrupted.pdf"
     create_corrupted_pdf(corrupted)
     print(f"  Created: {corrupted.name}")
+
+    lines = FIXTURES_DIR / "lines.pdf"
+    create_lines_pdf(lines)
+    print(f"  Created: {lines.name}")
 
     print("Done.")
 

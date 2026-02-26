@@ -5,6 +5,7 @@ import tomllib
 from pathlib import Path
 
 from pdf_png_converter.config.conversion_config import ConversionConfig
+from pdf_png_converter.models.rendering_options import RenderingOptions
 
 logger = logging.getLogger(__name__)
 
@@ -13,12 +14,19 @@ _DEFAULTS: dict = {
         "dpi": 200,
         "min_width_px": 3000,
         "min_height_px": 2000,
+        "rendering": {
+            "graphics_aa_level": 0,
+            "text_aa_level": 8,
+        },
     },
     "paths": {
         "import_dir": "import",
         "export_dir": "export",
     },
 }
+
+_AA_LEVEL_MIN = 0
+_AA_LEVEL_MAX = 8
 
 
 class ConfigLoader:
@@ -47,13 +55,20 @@ class ConfigLoader:
         result: dict = {}
         for section, defaults in _DEFAULTS.items():
             user_section = user_values.get(section, {})
-            result[section] = {**defaults, **user_section}
+            merged = {**defaults, **user_section}
+            # Deep-merge nested sub-sections (e.g. conversion.rendering)
+            for key, default_value in defaults.items():
+                if isinstance(default_value, dict):
+                    user_sub = user_section.get(key, {})
+                    merged[key] = {**default_value, **user_sub}
+            result[section] = merged
         return result
 
     def _build_config(self, merged: dict) -> ConversionConfig:
         """Validate merged values and construct an immutable ConversionConfig."""
         conversion = merged["conversion"]
         paths = merged["paths"]
+        rendering = conversion["rendering"]
 
         dpi = self._validated_positive_int(conversion["dpi"], "dpi", _DEFAULTS["conversion"]["dpi"])
         min_width_px = self._validated_positive_int(
@@ -62,6 +77,16 @@ class ConfigLoader:
         min_height_px = self._validated_positive_int(
             conversion["min_height_px"], "min_height_px", _DEFAULTS["conversion"]["min_height_px"]
         )
+        graphics_aa_level = self._validated_aa_level(
+            rendering["graphics_aa_level"],
+            "graphics_aa_level",
+            _DEFAULTS["conversion"]["rendering"]["graphics_aa_level"],
+        )
+        text_aa_level = self._validated_aa_level(
+            rendering["text_aa_level"],
+            "text_aa_level",
+            _DEFAULTS["conversion"]["rendering"]["text_aa_level"],
+        )
 
         return ConversionConfig(
             dpi=dpi,
@@ -69,6 +94,10 @@ class ConfigLoader:
             min_height_px=min_height_px,
             import_dir=Path(paths["import_dir"]),
             export_dir=Path(paths["export_dir"]),
+            rendering_options=RenderingOptions(
+                graphics_aa_level=graphics_aa_level,
+                text_aa_level=text_aa_level,
+            ),
         )
 
     def _validated_positive_int(self, value: int, field_name: str, default: int) -> int:
@@ -77,6 +106,20 @@ class ConfigLoader:
             logger.warning(
                 "Config value '%s' must be a positive integer (got %r) — using default %d.",
                 field_name,
+                value,
+                default,
+            )
+            return default
+        return value
+
+    def _validated_aa_level(self, value: int, field_name: str, default: int) -> int:
+        """Return value if a valid AA level (0–8); warn and return default otherwise."""
+        if not isinstance(value, int) or not (_AA_LEVEL_MIN <= value <= _AA_LEVEL_MAX):
+            logger.warning(
+                "Config value '%s' must be an integer between %d and %d (got %r) — using default %d.",
+                field_name,
+                _AA_LEVEL_MIN,
+                _AA_LEVEL_MAX,
                 value,
                 default,
             )
