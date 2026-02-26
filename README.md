@@ -11,6 +11,7 @@ Convert AutoCAD-exported PDF floor plans to high-resolution PNG images.
 - **Structure mirroring** — reproduces the `import/` directory hierarchy exactly under `export/`.
 - **Multi-page support** — produces one PNG per page, named `<filename>_page1.png`, `<filename>_page2.png`, etc.
 - **Configurable** — all resolution and path settings are controlled via `config.toml`; no code changes required.
+- **Rendering quality control** — independently configurable anti-aliasing levels for vector graphics and text via `[conversion.rendering]`; default settings fix the faint-line defect common in AutoCAD-exported PDFs while keeping text smooth.
 - **Resilient** — skips corrupted or unreadable PDFs, logs errors, and continues processing the rest of the batch.
 
 ## Installation
@@ -56,12 +57,18 @@ dpi = 200            # Rendering resolution (200 DPI is the default)
 min_width_px = 3000  # Minimum pixel count on the long dimension
 min_height_px = 2000 # Minimum pixel count on the short dimension
 
+[conversion.rendering]
+graphics_aa_level = 0  # Anti-aliasing for vector lines (0 = off, 8 = maximum)
+text_aa_level = 8      # Anti-aliasing for text glyphs (0 = off, 8 = maximum)
+
 [paths]
 import_dir = "import"   # Directory to scan for PDF files
 export_dir = "export"   # Directory to write PNG files
 ```
 
 > If `config.toml` is absent, the converter uses the built-in defaults shown above.
+
+> **Rendering quality:** `graphics_aa_level = 0` disables anti-aliasing for vector strokes, making lines render as fully opaque pixel-exact marks (fixes the faint-line defect in AutoCAD PDFs). `text_aa_level = 8` keeps dimension labels and annotations smooth. Both values accept integers from 0 (off) to 8 (maximum).
 
 ### Step 2 — Place PDF files in the import directory
 
@@ -159,6 +166,7 @@ uv run pytest tests/e2e/               # End-to-end tests only
 |---|---|---|
 | `import/` directory not found | Directory was not created | Run `mkdir import` at the project root |
 | Output PNG is too small | DPI too low for sheet size | Increase `dpi` in `config.toml` |
+| Lines appear faint or washed-out | Anti-aliasing enabled for vector graphics | Set `graphics_aa_level = 0` under `[conversion.rendering]` in `config.toml` (this is the default) |
 | `WARNING: Config file not found` | `config.toml` is missing | Copy from `config.toml.example` |
 | File shows `[SKIP]` in output | PDF is corrupted or password-protected | Verify the PDF opens in a viewer; remove password protection before export |
 | `PermissionError` on export directory | Write access denied | Check filesystem permissions on the `export/` path |
