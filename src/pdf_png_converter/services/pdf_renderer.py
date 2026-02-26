@@ -4,9 +4,11 @@ import logging
 from pathlib import Path
 
 import pymupdf
+import pymupdf.mupdf as _mupdf
 
 from pdf_png_converter.config.conversion_config import ConversionConfig
 from pdf_png_converter.models.conversion_result import ConversionResult
+from pdf_png_converter.models.rendering_options import RenderingOptions
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +33,11 @@ class PdfRenderer:
     ) -> ConversionResult:
         """Render a single PDF page to a PNG file.
 
+        Applies rendering options (anti-aliasing settings) before rasterisation.
         Automatically raises DPI if the rendered image falls below the configured
         minimum pixel dimensions.
         """
+        self._apply_rendering_options(config.rendering_options)
         with pymupdf.open(str(source_path)) as doc:
             page = doc[page_number - 1]
             dpi_used = self._calculate_required_dpi(page, config, initial_dpi=config.dpi)
@@ -49,6 +53,16 @@ class PdfRenderer:
             page_number=page_number,
             dpi_used=dpi_used,
         )
+
+    def _apply_rendering_options(self, options: RenderingOptions) -> None:
+        """Apply anti-aliasing levels to the PyMuPDF global rendering context.
+
+        Sets graphics AA independently from text AA so that vector strokes
+        render as pixel-exact fully opaque marks (graphics_aa_level=0) while
+        text glyphs remain smoothly rendered (text_aa_level=8 by default).
+        """
+        _mupdf.fz_set_graphics_aa_level(options.graphics_aa_level)
+        _mupdf.fz_set_text_aa_level(options.text_aa_level)
 
     def _meets_minimum_dimensions(self, width: int, height: int, config: ConversionConfig) -> bool:
         """Return True if the pixel dimensions satisfy the configured minimum floor."""

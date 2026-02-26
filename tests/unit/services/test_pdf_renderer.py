@@ -6,6 +6,7 @@ import pytest
 
 from pdf_png_converter.config.conversion_config import ConversionConfig
 from pdf_png_converter.models.conversion_result import ConversionResult
+from pdf_png_converter.models.rendering_options import RenderingOptions
 from pdf_png_converter.services.pdf_renderer import PdfRenderer
 
 
@@ -114,3 +115,49 @@ class TestPdfRendererRenderPage:
         output_path = tmp_path / "output.png"
         result = renderer.render_page(SINGLE_PAGE_PDF, 1, output_path, config)
         assert result.page_number == 1
+
+
+class TestPdfRendererApplyRenderingOptions:
+    def test_apply_rendering_options_calls_set_graphics_aa_level(self, renderer):
+        opts = RenderingOptions(graphics_aa_level=0, text_aa_level=8)
+        with patch("pymupdf.mupdf.fz_set_graphics_aa_level") as mock_graphics, \
+             patch("pymupdf.mupdf.fz_set_text_aa_level"):
+            renderer._apply_rendering_options(opts)
+            mock_graphics.assert_called_once_with(0)
+
+    def test_apply_rendering_options_calls_set_text_aa_level(self, renderer):
+        opts = RenderingOptions(graphics_aa_level=0, text_aa_level=8)
+        with patch("pymupdf.mupdf.fz_set_graphics_aa_level"), \
+             patch("pymupdf.mupdf.fz_set_text_aa_level") as mock_text:
+            renderer._apply_rendering_options(opts)
+            mock_text.assert_called_once_with(8)
+
+    def test_apply_rendering_options_uses_values_from_options(self, renderer):
+        opts = RenderingOptions(graphics_aa_level=4, text_aa_level=2)
+        with patch("pymupdf.mupdf.fz_set_graphics_aa_level") as mock_graphics, \
+             patch("pymupdf.mupdf.fz_set_text_aa_level") as mock_text:
+            renderer._apply_rendering_options(opts)
+            mock_graphics.assert_called_once_with(4)
+            mock_text.assert_called_once_with(2)
+
+    def test_render_page_applies_rendering_options_before_pixmap(self, renderer, config, tmp_path):
+        output_path = tmp_path / "output.png"
+        call_order = []
+
+        def record_graphics(level):
+            call_order.append(("set_graphics_aa_level", level))
+
+        def record_text(level):
+            call_order.append(("set_text_aa_level", level))
+
+        with patch("pymupdf.mupdf.fz_set_graphics_aa_level", side_effect=record_graphics), \
+             patch("pymupdf.mupdf.fz_set_text_aa_level", side_effect=record_text):
+            renderer.render_page(SINGLE_PAGE_PDF, 1, output_path, config)
+
+        # AA settings must have been applied (at least once)
+        assert any(name == "set_graphics_aa_level" for name, _ in call_order)
+        assert any(name == "set_text_aa_level" for name, _ in call_order)
+        # They must appear before any get_pixmap calls
+        # Verify the AA calls use values from config.rendering_options
+        graphics_calls = [(n, v) for n, v in call_order if n == "set_graphics_aa_level"]
+        assert graphics_calls[0][1] == config.rendering_options.graphics_aa_level

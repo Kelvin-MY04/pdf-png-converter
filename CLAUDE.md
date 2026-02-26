@@ -3,6 +3,7 @@
 Auto-generated from all feature plans. Last updated: 2026-02-25
 
 ## Active Technologies
+- Filesystem only — PDF input, PNG output (001-fix-faint-lines)
 
 - Python 3.14.3 + `pymupdf>=1.25.0` (PDF rendering), `tomllib` (stdlib, TOML config) (001-pdf-png-converter)
 
@@ -29,6 +30,7 @@ uv run pytest tests/e2e/       # End-to-end tests only
 Python 3.14.3: Follow standard conventions
 
 ## Recent Changes
+- 001-fix-faint-lines: Added Python 3.14.3 + `pymupdf>=1.25.0` (PDF rendering), `tomllib` (stdlib, TOML config)
 
 - 001-pdf-png-converter: Added Python 3.14.3 + `pymupdf>=1.25.0` (PDF rendering), `tomllib` (stdlib, TOML config)
 
